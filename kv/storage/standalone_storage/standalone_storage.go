@@ -20,10 +20,6 @@ func NewStandAloneStorage(conf *config.Config) *StandAloneStorage {
 	opt := badger.DefaultOptions
 	opt.Dir = conf.DBPath
 	opt.ValueDir = conf.DBPath
-	// db, err := badger.Open(opt)
-	// if err != nil {
-	// 	return nil
-	// }
 	return &StandAloneStorage{opt: opt}
 }
 
@@ -41,7 +37,7 @@ func (s *StandAloneStorage) Stop() error {
 
 //Reader returns a StorageReader
 func (s *StandAloneStorage) Reader(ctx *kvrpcpb.Context) (storage.StorageReader, error) {
-	return standAloneStorageReader{txn: s.db.NewTransaction(false)}, nil
+	return &standAloneStorageReader{txn: s.db.NewTransaction(false)}, nil
 }
 
 //Write will write []batch to DB
@@ -62,18 +58,21 @@ type standAloneStorageReader struct {
 	txn *badger.Txn
 }
 
-func (r standAloneStorageReader) GetCF(cf string, key []byte) ([]byte, error) {
+func (r *standAloneStorageReader) GetCF(cf string, key []byte) ([]byte, error) {
 	data, err := engine_util.GetCFFromTxn(r.txn, cf, key)
-	if err == nil || err == badger.ErrKeyNotFound {
+	if err == nil {
 		return data, nil
+	}
+	if err == badger.ErrKeyNotFound {
+		return nil, nil
 	}
 	return nil, err
 }
 
-func (r standAloneStorageReader) IterCF(cf string) engine_util.DBIterator {
+func (r *standAloneStorageReader) IterCF(cf string) engine_util.DBIterator {
 	return engine_util.NewCFIterator(cf, r.txn)
 }
 
-func (r standAloneStorageReader) Close() {
+func (r *standAloneStorageReader) Close() {
 	r.txn.Discard()
 }

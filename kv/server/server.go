@@ -36,6 +36,8 @@ func NewServer(storage storage.Storage) *Server {
 // The below functions are Server's gRPC API (implements TinyKvServer).
 
 // Raw API.
+
+//RawGet process raw get API
 func (server *Server) RawGet(_ context.Context, req *kvrpcpb.RawGetRequest) (*kvrpcpb.RawGetResponse, error) {
 	reader, err := server.storage.Reader(req.Context)
 	if err != nil {
@@ -53,12 +55,14 @@ func (server *Server) RawGet(_ context.Context, req *kvrpcpb.RawGetRequest) (*kv
 	}, nil
 }
 
+//RawPut process raw put API
 func (server *Server) RawPut(_ context.Context, req *kvrpcpb.RawPutRequest) (*kvrpcpb.RawPutResponse, error) {
-	err := server.storage.Write(req.Context, []storage.Modify{storage.Modify{Data: storage.Put{
-		Key:   req.Key,
-		Value: req.Value,
-		Cf:    req.Cf,
-	}}})
+	err := server.storage.Write(req.Context, []storage.Modify{
+		{Data: storage.Put{
+			Key:   req.Key,
+			Value: req.Value,
+			Cf:    req.Cf,
+		}}})
 	if err != nil {
 		return &kvrpcpb.RawPutResponse{
 			Error: err.Error(),
@@ -67,6 +71,7 @@ func (server *Server) RawPut(_ context.Context, req *kvrpcpb.RawPutRequest) (*kv
 	return &kvrpcpb.RawPutResponse{}, nil
 }
 
+//RawDelete process raw delete API
 func (server *Server) RawDelete(_ context.Context, req *kvrpcpb.RawDeleteRequest) (*kvrpcpb.RawDeleteResponse, error) {
 	err := server.storage.Write(req.Context, []storage.Modify{
 		{Data: storage.Delete{
@@ -81,6 +86,7 @@ func (server *Server) RawDelete(_ context.Context, req *kvrpcpb.RawDeleteRequest
 	return &kvrpcpb.RawDeleteResponse{}, nil
 }
 
+//RawScan process raw scan API
 func (server *Server) RawScan(_ context.Context, req *kvrpcpb.RawScanRequest) (*kvrpcpb.RawScanResponse, error) {
 	reader, err := server.storage.Reader(req.Context)
 	if err != nil {
